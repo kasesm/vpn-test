@@ -3,47 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V2Ray Turbo Checker</title>
+    <title>V2Ray Turbo & Access Checker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         body { font-family: 'Vazirmatn', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 1.5rem; }
     </style>
 </head>
-<body class="p-4 md:p-10">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-slate-800 p-6 md:p-8 rounded-3xl border border-slate-700 shadow-2xl mb-8">
-            <h1 class="text-2xl font-bold text-blue-400 mb-6 text-center">تستر فوق‌سریع (تست موازی)</h1>
+<body class="p-4 md:p-8">
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <div class="card p-6 border-blue-500/50 shadow-lg shadow-blue-500/10">
+            <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+                🚀 تست دسترسی واقعی (بعد از اتصال به VPN)
+            </h2>
+            <p class="text-xs text-slate-400 mb-6">ابتدا در اپلیکیشن خود به یک کانفیگ وصل شوید، سپس دکمه زیر را بزنید تا سرعت واقعی یوتیوب و گوگل چک شود.</p>
             
-            <textarea id="subLinks" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500 font-mono" dir="ltr" placeholder="لینک‌های ساب را اینجا وارد کنید..."></textarea>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">حداکثر پینگ مجاز:</label>
-                    <input type="number" id="pingLimit" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-center font-bold text-emerald-400">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-900/50 p-4 rounded-2xl text-center border border-slate-700">
+                    <span class="text-xs text-slate-500 block mb-1">YouTube</span>
+                    <b id="yt-status" class="text-sm">---</b>
                 </div>
-                <div class="flex items-end">
-                    <button onclick="startTurboTest()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg">شروع تست سریع</button>
+                <div class="bg-slate-900/50 p-4 rounded-2xl text-center border border-slate-700">
+                    <span class="text-xs text-slate-500 block mb-1">Google</span>
+                    <b id="google-status" class="text-sm">---</b>
                 </div>
-            </div>
-
-            <div id="stats" class="grid grid-cols-3 gap-4 text-center bg-slate-900/80 p-5 rounded-2xl border border-slate-800">
-                <div class="flex flex-col"><span class="text-slate-500 text-xs">کل</span><b id="total" class="text-blue-400 text-lg">0</b></div>
-                <div class="flex flex-col"><span class="text-slate-500 text-xs">تست شده</span><b id="tested" class="text-yellow-400 text-lg">0</b></div>
-                <div class="flex flex-col"><span class="text-slate-500 text-xs">سالم</span><b id="healthy" class="text-emerald-400 text-lg">0</b></div>
+                <button onclick="checkRealInternet()" id="realTestBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl transition shadow-lg shadow-emerald-900/20">
+                    بررسی وضعیت اتصال
+                </button>
             </div>
         </div>
 
-        <div class="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-xl">
-            <div class="max-h-[500px] overflow-y-auto custom-scroll">
-                <table class="w-full text-right text-sm">
-                    <thead class="bg-slate-900 sticky top-0 z-10 text-slate-400 text-xs">
+        <div class="card p-6">
+            <h2 class="text-lg font-bold text-slate-300 mb-4">۱. استخراج و فیلتر اولیه (پینگ سرور)</h2>
+            <textarea id="subLinks" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-xs mb-4 outline-none focus:ring-2 focus:ring-blue-500 font-mono" dir="ltr" placeholder="لینک‌های ساب را اینجا وارد کنید..."></textarea>
+            
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <input type="number" id="pingLimit" value="800" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-center font-bold text-emerald-400">
+                <button onclick="startTurboTest()" id="mainBtn" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition">شروع پینگ سریع</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-[10px] md:text-xs">
+                <div class="bg-slate-900 p-2 rounded-lg">کل: <b id="total" class="text-blue-400">0</b></div>
+                <div class="bg-slate-900 p-2 rounded-lg">تست: <b id="tested" class="text-yellow-400">0</b></div>
+                <div class="bg-slate-900 p-2 rounded-lg text-emerald-400">سالم: <b id="healthy">0</b></div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="max-h-[400px] overflow-y-auto">
+                <table class="w-full text-right text-xs md:text-sm">
+                    <thead class="bg-slate-900/80 sticky top-0 text-slate-500">
                         <tr>
                             <th class="p-4">نام کانفیگ</th>
-                            <th class="p-4 text-center">پینگ</th>
-                            <th class="p-4 text-center">وضعیت</th>
+                            <th class="p-4 text-center">پینگ سرور</th>
                         </tr>
                     </thead>
                     <tbody id="resultTable" class="divide-y divide-slate-700/50"></tbody>
@@ -51,128 +65,114 @@
             </div>
         </div>
 
-        <button onclick="copyAll()" id="copyBtn" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold hidden shadow-xl transition-all transform hover:-translate-y-1">کپی کانفیگ‌های پرسرعت</button>
+        <button onclick="copyAll()" id="copyBtn" class="w-full bg-emerald-600 py-4 rounded-2xl font-bold hidden shadow-xl">کپی موارد با پینگ مناسب</button>
     </div>
 
     <script>
-        const PROXY_WORKER = "https://sub-proxy.task132141.workers.dev/";
-        const CONCURRENCY_LIMIT = 15; // تعداد تست‌های همزمان (سرعت)
-
+        const PROXY_WORKer = "https://sub-proxy.task132141.workers.dev/";
         let healthyConfigs = [];
-        let testedCount = 0;
-        let totalConfigs = 0;
 
+        // --- تست دسترسی واقعی (YouTube & Google) ---
+        async function checkRealInternet() {
+            const btn = document.getElementById('realTestBtn');
+            const ytLabel = document.getElementById('yt-status');
+            const gLabel = document.getElementById('google-status');
+
+            btn.disabled = true;
+            btn.innerText = "درحال بررسی...";
+            ytLabel.innerText = "⏳..."; gLabel.innerText = "⏳...";
+
+            const testSite = async (url, label) => {
+                const start = Date.now();
+                try {
+                    // استفاده از no-cors برای اجتناب از خطای CORS، اگر لود شود یعنی وی‌پی‌ان وصل است
+                    await fetch(url, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+                    const delay = Date.now() - start;
+                    label.innerText = `✅ وصل (${delay}ms)`;
+                    label.className = "text-emerald-400";
+                } catch {
+                    label.innerText = "❌ قطع";
+                    label.className = "text-red-500";
+                }
+            };
+
+            await Promise.all([
+                testSite('https://www.youtube.com/favicon.ico', ytLabel),
+                testSite('https://www.google.com/favicon.ico', gLabel)
+            ]);
+
+            btn.disabled = false;
+            btn.innerText = "بررسی مجدد";
+        }
+
+        // --- تستر توربو (همان منطق سریع قبلی) ---
+        let testedCount = 0;
         async function startTurboTest() {
             const subInput = document.getElementById('subLinks').value.trim();
             const btn = document.getElementById('mainBtn');
             const table = document.getElementById('resultTable');
+            if (!subInput) return alert("لینک ساب کو؟");
 
-            if (!subInput) return alert("لطفاً لینک ساب را وارد کنید.");
-
-            btn.disabled = true;
-            btn.innerText = "در حال دریافت...";
-            table.innerHTML = "";
-            healthyConfigs = [];
-            testedCount = 0;
-            updateUI(0, 0, 0);
+            btn.disabled = true; btn.innerText = "درحال دریافت...";
+            table.innerHTML = ""; healthyConfigs = []; testedCount = 0;
 
             try {
-                const subUrls = subInput.split('\n').filter(l => l.trim() !== '');
-                let allConfigs = [];
+                const response = await fetch(`${PROXY_WORKer}?url=${encodeURIComponent(subInput)}`);
+                const rawData = await response.text();
+                let decoded = "";
+                try { decoded = atob(rawData.trim().replace(/_/g, '/').replace(/-/g, '+').replace(/\s/g, '')); } catch { decoded = rawData; }
+                
+                const allConfigs = decoded.split(/\r?\n/).filter(line => line.includes('://'));
+                document.getElementById('total').innerText = allConfigs.length;
 
-                for (const sub of subUrls) {
-                    const response = await fetch(`${PROXY_WORKER}?url=${encodeURIComponent(sub.trim())}`);
-                    const rawData = await response.text();
-                    let decoded = "";
-                    try { decoded = atob(rawData.trim().replace(/_/g, '/').replace(/-/g, '+').replace(/\s/g, '')); } 
-                    catch { decoded = rawData; }
-                    
-                    const found = decoded.split(/\r?\n/).filter(line => line.includes('://'));
-                    allConfigs = [...allConfigs, ...found];
-                }
-
-                totalConfigs = allConfigs.length;
-                updateUI(totalConfigs, 0, 0);
-
-                // --- منطق تست موازی (Turbo Mode) ---
+                // اجرای تست همزمان (Parallel)
                 const queue = [...allConfigs];
-                const workers = [];
-
-                for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, queue.length); i++) {
-                    workers.push(worker(queue));
-                }
-
+                const workers = Array(15).fill(0).map(() => (async () => {
+                    while (queue.length > 0) {
+                        const conf = queue.shift();
+                        await testConfig(conf, allConfigs.length);
+                    }
+                })());
                 await Promise.all(workers);
-
-            } catch (err) {
-                alert("خطا در دریافت اطلاعات.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "شروع مجدد";
-                if(healthyConfigs.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
-            }
+            } catch (err) { alert("خطا در ساب‌لینک!"); }
+            btn.disabled = false; btn.innerText = "شروع مجدد";
+            if(healthyConfigs.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
         }
 
-        async function worker(queue) {
-            while (queue.length > 0) {
-                const conf = queue.shift();
-                await testConfig(conf);
-            }
-        }
-
-        async function testConfig(conf) {
-            let address = "", name = "Unnamed";
+        async function testConfig(conf, total) {
+            let address = "", name = "Config";
             try {
                 if (conf.startsWith('vmess://')) {
                     const json = JSON.parse(atob(conf.replace('vmess://', '')));
                     address = json.add; name = json.ps;
                 } else {
-                    const parts = new URL(conf);
-                    address = parts.hostname || parts.username;
+                    const urlObj = new URL(conf);
+                    address = urlObj.hostname;
                     name = decodeURIComponent(conf.split('#')[1] || "Config");
                 }
 
-                const row = document.getElementById('resultTable').insertRow(0); // اضافه کردن به ابتدای لیست
+                const row = document.getElementById('resultTable').insertRow(0);
                 const nCell = row.insertCell(0);
                 const pCell = row.insertCell(1);
-                const sCell = row.insertCell(2);
-                
-                nCell.className = "p-4 text-slate-200 truncate max-w-[200px]";
+                nCell.className = "p-4 truncate max-w-[200px]";
                 pCell.className = "p-4 text-center font-mono";
-                sCell.className = "p-4 text-center";
-                nCell.innerText = name;
-                pCell.innerText = "...";
+                nCell.innerText = name; pCell.innerText = "...";
 
                 const start = Date.now();
                 try {
                     await fetch(`https://${address}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
                     const delay = Date.now() - start;
-                    pCell.innerText = delay + " ms";
-                    
+                    pCell.innerText = delay + "ms";
                     if (delay <= parseInt(document.getElementById('pingLimit').value)) {
-                        pCell.className += " text-emerald-400 font-bold";
-                        sCell.innerText = "✅";
+                        pCell.className += " text-emerald-400";
                         healthyConfigs.push(conf);
-                    } else {
-                        pCell.className += " text-amber-500";
-                        sCell.innerText = "🐢";
                     }
-                } catch {
-                    pCell.innerText = "❌";
-                    pCell.className += " text-red-500";
-                    sCell.innerText = "قطع";
-                }
-            } catch (e) { } 
-            finally {
+                } catch { pCell.innerText = "❌"; pCell.className += " text-red-500"; }
+            } catch (e) {} finally {
                 testedCount++;
-                updateUI(totalConfigs, testedCount, healthyConfigs.length);
+                document.getElementById('tested').innerText = testedCount;
+                document.getElementById('healthy').innerText = healthyConfigs.length;
             }
-        }
-
-        function updateUI(t, td, h) {
-            document.getElementById('total').innerText = t;
-            document.getElementById('tested').innerText = td;
-            document.getElementById('healthy').innerText = h;
         }
 
         function copyAll() {
