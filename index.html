@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN Sub Link Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-5">
+
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-center text-blue-400">تستر ساب‌لینک وی‌پی‌ان</h1>
+        
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
+            <label class="block mb-2 text-sm">لینک‌های ساب را وارد کنید (هر خط یک لینک):</label>
+            <textarea id="linksInput" rows="5" class="w-full p-3 bg-gray-700 border border-gray-600 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://example.com/sub..."></textarea>
+            
+            <button onclick="checkLinks()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                شروع تست
+            </button>
+        </div>
+
+        <div class="mt-8">
+            <table class="w-full text-right border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-700 text-gray-400">
+                        <th class="p-3">ردیف</th>
+                        <th class="p-3">آدرس ساب‌لینک</th>
+                        <th class="p-3">وضعیت</th>
+                        <th class="p-3">تأخیر (Ping)</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function checkLinks() {
+            const input = document.getElementById('linksInput').value;
+            const links = input.split('\n').filter(link => link.trim() !== '');
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+
+            for (let i = 0; i < links.length; i++) {
+                const url = links[i].trim();
+                const row = resultsBody.insertRow();
+                row.className = "border-b border-gray-800 text-sm";
+                
+                row.innerHTML = `
+                    <td class="p-3">${i + 1}</td>
+                    <td class="p-3 truncate max-w-xs">${url}</td>
+                    <td class="p-3 text-yellow-500">در حال تست...</td>
+                    <td class="p-3">-</td>
+                `;
+
+                const start = performance.now();
+                try {
+                    // استفاده از mode no-cors برای دور زدن محدودیت‌های سخت‌گیرانه
+                    // دقت کنید که این متد محتوا را نمی‌خواند، فقط زنده بودن سرور را چک می‌کند
+                    await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
+                    const end = performance.now();
+                    const duration = Math.round(end - start);
+
+                    row.cells[2].innerHTML = '<span class="text-green-500">✅ در دسترس</span>';
+                    row.cells[3].innerText = `${duration} ms`;
+                } catch (error) {
+                    row.cells[2].innerHTML = '<span class="text-red-500">❌ خطا / مسدود</span>';
+                    row.cells[3].innerText = '∞';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
