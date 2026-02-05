@@ -3,124 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sublink Config Tester</title>
+    <title>VPN Config Pro Tester</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-        body { font-family: 'Vazirmatn', sans-serif; text-align: right; }
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #0f172a; color: #f8fafc; }
     </style>
 </head>
-<body class="bg-gray-900 text-white p-5">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl font-bold text-blue-400 text-center mb-6">استخراج و تست پینگ کانفیگ‌ها</h1>
-        
-        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-            <textarea id="subLinks" rows="4" class="w-full bg-gray-900 p-3 rounded border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="لینک‌های ساب را اینجا وارد کنید (هر خط یکی)"></textarea>
-            <button onclick="processSub()" id="btn" class="w-full mt-4 bg-blue-600 py-3 rounded-lg font-bold hover:bg-blue-700 transition">استخراج و شروع تست</button>
-        </div>
+<body class="p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-extrabold text-blue-500 mb-2">تستر حرفه‌ای سابلینک</h1>
+            <p class="text-gray-400 text-sm">استخراج، تست پینگ و فیلتر کردن کانفیگ‌های سالم</p>
+        </header>
 
-        <div id="status" class="mt-4 text-center text-sm text-gray-400"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl">
+                    <label class="block text-sm font-medium mb-2 text-blue-300">ورودی سابلینک:</label>
+                    <textarea id="subLinks" rows="6" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="لینک‌های ساب را اینجا وارد کنید..."></textarea>
+                    
+                    <div class="mt-4 shadow-sm">
+                        <label class="block text-xs text-gray-400 mb-1">حداکثر پینگ مجاز (ms):</label>
+                        <input type="number" id="pingLimit" value="500" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-center">
+                    </div>
 
-        <div class="mt-8 overflow-x-auto">
-            <table class="w-full border-collapse bg-gray-800 rounded-lg overflow-hidden">
-                <thead class="bg-gray-700 text-gray-300">
-                    <tr>
-                        <th class="p-3 text-right">نام کانفیگ (Remark)</th>
-                        <th class="p-3 text-right">آدرس سرور</th>
-                        <th class="p-3 text-center">پینگ (ms)</th>
-                    </tr>
-                </thead>
-                <tbody id="resultTable"></tbody>
-            </table>
+                    <button onclick="processSub()" id="btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all transform active:scale-95">شروع بررسی</button>
+                    <button onclick="copyHealthyConfigs()" id="copyBtn" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-sm font-medium hidden">کپی کانفیگ‌های سالم</button>
+                </div>
+                <div id="status" class="text-center text-xs text-slate-500"></div>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+                    <table class="w-full text-right">
+                        <thead class="bg-slate-700/50 text-gray-300 text-xs">
+                            <tr>
+                                <th class="p-4">نام کانفیگ</th>
+                                <th class="p-4 text-center">پینگ</th>
+                                <th class="p-4 text-center">وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTable" class="divide-y divide-slate-700">
+                            </tbody>
+                    </table>
+                    <div id="emptyState" class="p-10 text-center text-gray-500 text-sm">هنوز داده‌ای برای نمایش وجود ندارد.</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        let healthyConfigs = [];
+
         async function processSub() {
             const btn = document.getElementById('btn');
             const subInput = document.getElementById('subLinks').value.trim();
-            const results = document.getElementById('resultTable');
+            const resultsBody = document.getElementById('resultTable');
             const status = document.getElementById('status');
+            const pingLimit = parseInt(document.getElementById('pingLimit').value);
             
-            if (!subInput) return alert("لطفاً لینک ساب را وارد کنید");
+            if (!subInput) return;
             
+            // بازنشانی
             btn.disabled = true;
             btn.innerText = "در حال پردازش...";
-            results.innerHTML = "";
+            resultsBody.innerHTML = "";
+            healthyConfigs = [];
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('copyBtn').classList.add('hidden');
+
             const links = subInput.split('\n');
 
             for (let sub of links) {
                 try {
-                    status.innerText = `در حال دریافت محتوای ساب...`;
-                    // استفاده از پروکسی برای دور زدن CORS
+                    status.innerText = "درحال دریافت محتوا...";
                     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(sub.trim())}`;
                     const response = await fetch(proxyUrl);
                     const data = await response.json();
                     
                     let decoded;
-                    try {
-                        decoded = atob(data.contents.trim()); // رمزگشایی Base64
-                    } catch {
-                        decoded = data.contents; // اگر Base64 نبود
-                    }
+                    try { decoded = atob(data.contents.trim()); } catch { decoded = data.contents; }
 
                     const configs = decoded.split('\n').filter(c => c.includes('://'));
                     
                     for (let conf of configs) {
                         const parsed = parseConfig(conf);
                         if (parsed) {
-                            const row = results.insertRow();
-                            row.innerHTML = `<td class="p-3 text-sm">${parsed.name}</td><td class="p-3 text-xs text-gray-400">${parsed.address}</td><td class="p-3 text-center font-mono" id="ping-${parsed.id}">...</td>`;
+                            const rowId = `row-${Math.random().toString(36).substr(2, 9)}`;
+                            const row = resultsBody.insertRow();
+                            row.id = rowId;
+                            row.className = "hover:bg-slate-700/30 transition text-sm";
+                            row.innerHTML = `
+                                <td class="p-4 max-w-[200px] truncate font-medium">${parsed.name}</td>
+                                <td class="p-4 text-center font-mono" id="ping-${rowId}">...</td>
+                                <td class="p-4 text-center" id="status-${rowId}">⏳</td>
+                            `;
                             
-                            // تست پینگ هر کانفیگ به صورت نامتقارن
-                            testPing(parsed.address, `ping-${parsed.id}`);
+                            // اجرای تست
+                            performTest(parsed, rowId, conf, pingLimit);
                         }
                     }
                 } catch (e) {
-                    status.innerText = "خطا در دریافت ساب‌لینک. مطمئن شوید لینک معتبر است.";
+                    status.innerText = "خطا در اتصال به ساب‌لینک.";
                 }
             }
             btn.disabled = false;
-            btn.innerText = "استخراج و شروع تست";
-            status.innerText = "تست به پایان رسید.";
+            btn.innerText = "شروع مجدد";
         }
 
         function parseConfig(url) {
             try {
-                let name = "Unnamed", address = "";
+                let name = "بدون نام", address = "";
                 if (url.startsWith('vmess://')) {
                     const data = JSON.parse(atob(url.replace('vmess://', '')));
-                    name = data.ps;
-                    address = data.add;
+                    name = data.ps; address = data.add;
                 } else {
-                    // برای vless و trojan و ss
                     const parts = new URL(url);
                     name = decodeURIComponent(parts.hash.replace('#', '')) || "Config";
                     address = parts.hostname;
                 }
-                return { name, address, id: Math.random().toString(36).substr(2, 9) };
+                return { name, address };
             } catch { return null; }
         }
 
-        async function testPing(host, elementId) {
+        async function performTest(parsed, rowId, fullConfig, limit) {
             const start = Date.now();
-            const cell = document.getElementById(elementId);
-            
-            // شبیه‌سازی پینگ در مرورگر با لود کردن یک تصویر فیک از هاست
-            // این دقیق‌ترین راه برای تست با اینترنت کاربر در مرورگر است
-            const img = new Image();
-            const timeout = setTimeout(() => {
-                cell.innerText = "Timeout";
-                cell.className = "text-red-500 p-3 text-center";
-            }, 5000);
+            const pingCell = document.getElementById(`ping-${rowId}`);
+            const statusCell = document.getElementById(`status-${rowId}`);
+            const row = document.getElementById(rowId);
 
-            img.onload = img.onerror = () => {
-                clearTimeout(timeout);
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 4000);
+
+            try {
+                // تست پینگ از طریق درخواست HTTP به پورت 443 سرور
+                await fetch(`https://${parsed.address}`, { mode: 'no-cors', signal: controller.signal });
                 const delta = Date.now() - start;
-                cell.innerText = delta + "ms";
-                cell.className = delta < 300 ? "text-green-500 p-3 text-center" : "text-yellow-500 p-3 text-center";
-            };
-            img.src = `https://${host}/favicon.ico?t=${start}`;
+                clearTimeout(timeout);
+
+                pingCell.innerText = delta + "ms";
+                
+                if (delta <= limit) {
+                    pingCell.className = "p-4 text-center font-mono text-emerald-400";
+                    statusCell.innerText = "✅";
+                    healthyConfigs.push(fullConfig);
+                    document.getElementById('copyBtn').classList.remove('hidden');
+                } else {
+                    row.classList.add('opacity-40');
+                    pingCell.className = "p-4 text-center font-mono text-amber-400";
+                    statusCell.innerText = "🐢";
+                }
+            } catch {
+                pingCell.innerText = "Timeout";
+                pingCell.className = "p-4 text-center font-mono text-red-500";
+                statusCell.innerText = "❌";
+                row.classList.add('opacity-30');
+            }
+        }
+
+        function copyHealthyConfigs() {
+            const text = healthyConfigs.join('\n');
+            navigator.clipboard.writeText(text);
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.innerText = "کپی شد! (تعداد: " + healthyConfigs.length + ")";
+            setTimeout(() => { copyBtn.innerText = "کپی کانفیگ‌های سالم"; }, 2000);
         }
     </script>
 </body>
