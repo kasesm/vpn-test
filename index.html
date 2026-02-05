@@ -3,77 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPN Sub Link Checker</title>
+    <title>Sublink Config Tester</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-        body { font-family: 'Vazirmatn', sans-serif; }
+        body { font-family: 'Vazirmatn', sans-serif; text-align: right; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-5">
-
-    <div class="max-w-3xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6 text-center text-blue-400">تستر ساب‌لینک وی‌پی‌ان</h1>
+<body class="bg-gray-900 text-white p-5">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold text-blue-400 text-center mb-6">استخراج و تست پینگ کانفیگ‌ها</h1>
         
-        <div class="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-            <label class="block mb-2 text-sm">لینک‌های ساب را وارد کنید (هر خط یک لینک):</label>
-            <textarea id="linksInput" rows="5" class="w-full p-3 bg-gray-700 border border-gray-600 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://example.com/sub..."></textarea>
-            
-            <button onclick="checkLinks()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
-                شروع تست
-            </button>
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+            <textarea id="subLinks" rows="4" class="w-full bg-gray-900 p-3 rounded border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="لینک‌های ساب را اینجا وارد کنید (هر خط یکی)"></textarea>
+            <button onclick="processSub()" id="btn" class="w-full mt-4 bg-blue-600 py-3 rounded-lg font-bold hover:bg-blue-700 transition">استخراج و شروع تست</button>
         </div>
 
-        <div class="mt-8">
-            <table class="w-full text-right border-collapse">
-                <thead>
-                    <tr class="border-b border-gray-700 text-gray-400">
-                        <th class="p-3">ردیف</th>
-                        <th class="p-3">آدرس ساب‌لینک</th>
-                        <th class="p-3">وضعیت</th>
-                        <th class="p-3">تأخیر (Ping)</th>
+        <div id="status" class="mt-4 text-center text-sm text-gray-400"></div>
+
+        <div class="mt-8 overflow-x-auto">
+            <table class="w-full border-collapse bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-700 text-gray-300">
+                    <tr>
+                        <th class="p-3 text-right">نام کانفیگ (Remark)</th>
+                        <th class="p-3 text-right">آدرس سرور</th>
+                        <th class="p-3 text-center">پینگ (ms)</th>
                     </tr>
                 </thead>
-                <tbody id="resultsBody">
-                    </tbody>
+                <tbody id="resultTable"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        async function checkLinks() {
-            const input = document.getElementById('linksInput').value;
-            const links = input.split('\n').filter(link => link.trim() !== '');
-            const resultsBody = document.getElementById('resultsBody');
-            resultsBody.innerHTML = '';
+        async function processSub() {
+            const btn = document.getElementById('btn');
+            const subInput = document.getElementById('subLinks').value.trim();
+            const results = document.getElementById('resultTable');
+            const status = document.getElementById('status');
+            
+            if (!subInput) return alert("لطفاً لینک ساب را وارد کنید");
+            
+            btn.disabled = true;
+            btn.innerText = "در حال پردازش...";
+            results.innerHTML = "";
+            const links = subInput.split('\n');
 
-            for (let i = 0; i < links.length; i++) {
-                const url = links[i].trim();
-                const row = resultsBody.insertRow();
-                row.className = "border-b border-gray-800 text-sm";
-                
-                row.innerHTML = `
-                    <td class="p-3">${i + 1}</td>
-                    <td class="p-3 truncate max-w-xs">${url}</td>
-                    <td class="p-3 text-yellow-500">در حال تست...</td>
-                    <td class="p-3">-</td>
-                `;
-
-                const start = performance.now();
+            for (let sub of links) {
                 try {
-                    // استفاده از mode no-cors برای دور زدن محدودیت‌های سخت‌گیرانه
-                    // دقت کنید که این متد محتوا را نمی‌خواند، فقط زنده بودن سرور را چک می‌کند
-                    await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
-                    const end = performance.now();
-                    const duration = Math.round(end - start);
+                    status.innerText = `در حال دریافت محتوای ساب...`;
+                    // استفاده از پروکسی برای دور زدن CORS
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(sub.trim())}`;
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    
+                    let decoded;
+                    try {
+                        decoded = atob(data.contents.trim()); // رمزگشایی Base64
+                    } catch {
+                        decoded = data.contents; // اگر Base64 نبود
+                    }
 
-                    row.cells[2].innerHTML = '<span class="text-green-500">✅ در دسترس</span>';
-                    row.cells[3].innerText = `${duration} ms`;
-                } catch (error) {
-                    row.cells[2].innerHTML = '<span class="text-red-500">❌ خطا / مسدود</span>';
-                    row.cells[3].innerText = '∞';
+                    const configs = decoded.split('\n').filter(c => c.includes('://'));
+                    
+                    for (let conf of configs) {
+                        const parsed = parseConfig(conf);
+                        if (parsed) {
+                            const row = results.insertRow();
+                            row.innerHTML = `<td class="p-3 text-sm">${parsed.name}</td><td class="p-3 text-xs text-gray-400">${parsed.address}</td><td class="p-3 text-center font-mono" id="ping-${parsed.id}">...</td>`;
+                            
+                            // تست پینگ هر کانفیگ به صورت نامتقارن
+                            testPing(parsed.address, `ping-${parsed.id}`);
+                        }
+                    }
+                } catch (e) {
+                    status.innerText = "خطا در دریافت ساب‌لینک. مطمئن شوید لینک معتبر است.";
                 }
             }
+            btn.disabled = false;
+            btn.innerText = "استخراج و شروع تست";
+            status.innerText = "تست به پایان رسید.";
+        }
+
+        function parseConfig(url) {
+            try {
+                let name = "Unnamed", address = "";
+                if (url.startsWith('vmess://')) {
+                    const data = JSON.parse(atob(url.replace('vmess://', '')));
+                    name = data.ps;
+                    address = data.add;
+                } else {
+                    // برای vless و trojan و ss
+                    const parts = new URL(url);
+                    name = decodeURIComponent(parts.hash.replace('#', '')) || "Config";
+                    address = parts.hostname;
+                }
+                return { name, address, id: Math.random().toString(36).substr(2, 9) };
+            } catch { return null; }
+        }
+
+        async function testPing(host, elementId) {
+            const start = Date.now();
+            const cell = document.getElementById(elementId);
+            
+            // شبیه‌سازی پینگ در مرورگر با لود کردن یک تصویر فیک از هاست
+            // این دقیق‌ترین راه برای تست با اینترنت کاربر در مرورگر است
+            const img = new Image();
+            const timeout = setTimeout(() => {
+                cell.innerText = "Timeout";
+                cell.className = "text-red-500 p-3 text-center";
+            }, 5000);
+
+            img.onload = img.onerror = () => {
+                clearTimeout(timeout);
+                const delta = Date.now() - start;
+                cell.innerText = delta + "ms";
+                cell.className = delta < 300 ? "text-green-500 p-3 text-center" : "text-yellow-500 p-3 text-center";
+            };
+            img.src = `https://${host}/favicon.ico?t=${start}`;
         }
     </script>
 </body>
