@@ -3,103 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPN Sub Checker (Cloudflare Edition)</title>
+    <title>V2Ray Sub Checker - Private Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         body { font-family: 'Vazirmatn', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .config-row:hover { background-color: rgba(30, 41, 59, 0.5); }
     </style>
 </head>
 <body class="p-4 md:p-10">
     <div class="max-w-4xl mx-auto">
-        <div class="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
-            <h1 class="text-2xl font-bold text-blue-400 mb-6 text-center">تستر ساب‌لینک (پروکسی کلادفلیر)</h1>
+        <div class="bg-slate-800 p-6 md:p-8 rounded-3xl border border-slate-700 shadow-2xl mb-8">
+            <h1 class="text-2xl font-bold text-blue-400 mb-6 text-center">پنل تست و فیلتر ساب‌لینک</h1>
             
-            <textarea id="subLinks" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500 font-mono" dir="ltr" placeholder="https://example.com/sub..."></textarea>
+            <textarea id="subLinks" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500 font-mono" dir="ltr" placeholder="لینک‌های ساب را اینجا وارد کنید (هر خط یکی)"></textarea>
             
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">آدرس ورکر کلادفلیر شما:</label>
-                    <input type="text" id="workerUrl" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs" dir="ltr" placeholder="https://your-worker.workers.dev">
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1">
+                    <label class="block text-xs text-slate-400 mb-1 mr-2">فیلتر پینگ (کمتر از):</label>
+                    <div class="relative">
+                        <input type="number" id="pingLimit" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-center font-bold text-emerald-400">
+                        <span class="absolute left-3 top-3 text-xs text-slate-500">ms</span>
+                    </div>
                 </div>
-                <div class="flex items-end">
-                    <button onclick="startTest()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-bold transition">شروع تست</button>
+                <div class="flex-1 flex items-end">
+                    <button onclick="startTest()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20">شروع عملیات تست</button>
                 </div>
             </div>
 
-            <div id="stats" class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-4 rounded-2xl">
-                <div>کل کانفیگ‌ها: <b id="total" class="text-blue-400">0</b></div>
-                <div>تست شده: <b id="tested" class="text-yellow-400">0</b></div>
-                <div>سالم: <b id="healthy" class="text-green-400">0</b></div>
+            <div id="stats" class="grid grid-cols-3 gap-4 text-center text-xs md:text-sm bg-slate-900/80 p-5 rounded-2xl border border-slate-800">
+                <div class="flex flex-col"><span class="text-slate-500">کل کانفیگ‌ها</span><b id="total" class="text-blue-400 text-lg">0</b></div>
+                <div class="flex flex-col"><span class="text-slate-500">بررسی شده</span><b id="tested" class="text-yellow-400 text-lg">0</b></div>
+                <div class="flex flex-col"><span class="text-slate-500">پینگ مناسب</span><b id="healthy" class="text-emerald-400 text-lg">0</b></div>
             </div>
         </div>
 
-        <div class="mt-8 bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-xl">
-            <table class="w-full text-right text-sm">
-                <thead class="bg-slate-900/80 text-slate-400">
-                    <tr>
-                        <th class="p-4">نام کانفیگ</th>
-                        <th class="p-4 text-center">پینگ</th>
-                        <th class="p-4 text-center">وضعیت</th>
-                    </tr>
-                </thead>
-                <tbody id="resultTable"></tbody>
-            </table>
+        <div class="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-5">نام کانفیگ (Remark)</th>
+                            <th class="p-5 text-center">تأخیر (Ping)</th>
+                            <th class="p-5 text-center">وضعیت</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultTable" class="divide-y divide-slate-700/50">
+                        </tbody>
+                </table>
+            </div>
+            <div id="emptyMsg" class="p-10 text-center text-slate-500 italic text-sm">لیست برای شروع تست خالی است.</div>
         </div>
-        <button onclick="copyAll()" id="copyBtn" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold hidden shadow-lg shadow-emerald-900/20">کپی کانفیگ‌های سالم (زیر ۱۰۰۰ میلی‌ثانیه)</button>
+
+        <button onclick="copyAll()" id="copyBtn" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold hidden shadow-xl transition-all transform hover:-translate-y-1">کپی کانفیگ‌های پرسرعت</button>
     </div>
 
     <script>
+        // آدرس ورکر شما
+        const PROXY_WORKER = "https://sub-proxy.task132141.workers.dev/";
+        
         let healthyConfigs = [];
         let configList = [];
         let testedCount = 0;
 
         async function startTest() {
-            const subUrl = document.getElementById('subLinks').value.trim();
-            const workerProxy = document.getElementById('workerUrl').value.trim();
+            const subInput = document.getElementById('subLinks').value.trim();
             const btn = document.getElementById('mainBtn');
             const table = document.getElementById('resultTable');
+            const emptyMsg = document.getElementById('emptyMsg');
 
-            if (!subUrl || !workerProxy) return alert("لطفاً هم لینک ساب و هم آدرس ورکر را وارد کنید");
+            if (!subInput) return alert("لطفاً حداقل یک لینک ساب وارد کنید.");
 
-            // آماده‌سازی اولیه
+            // ریست کردن ظاهر
             btn.disabled = true;
-            btn.innerText = "در حال دریافت ساب...";
+            btn.innerText = "در حال استخراج محتوا...";
             table.innerHTML = "";
+            emptyMsg.style.display = 'none';
             healthyConfigs = [];
             testedCount = 0;
+            updateStats(0, 0, 0);
 
-            try {
-                // دریافت محتوا از طریق ورکر شما
-                const response = await fetch(`${workerProxy}?url=${encodeURIComponent(subUrl)}`);
-                const rawData = await response.text();
-                
-                let decoded = "";
+            const subUrls = subInput.split('\n').filter(l => l.trim() !== '');
+
+            for (const sub of subUrls) {
                 try {
-                    decoded = atob(rawData.trim().replace(/_/g, '/').replace(/-/g, '+'));
-                } catch {
-                    decoded = rawData;
+                    const response = await fetch(`${PROXY_WORKER}?url=${encodeURIComponent(sub.trim())}`);
+                    if (!response.ok) throw new Error();
+                    const rawData = await response.text();
+                    
+                    let decoded = "";
+                    try {
+                        // تلاش برای دیکود کردن Base64 معمولی و URL-Safe
+                        decoded = atob(rawData.trim().replace(/_/g, '/').replace(/-/g, '+').replace(/\s/g, ''));
+                    } catch {
+                        decoded = rawData; // اگر مستقیم لینک بود
+                    }
+
+                    const found = decoded.split(/\r?\n/).filter(line => line.includes('://'));
+                    configList = found;
+                    updateStats(configList.length, 0, 0);
+
+                    for (const conf of configList) {
+                        await testConfig(conf);
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    alert("خطا در دریافت ساب‌لینک! مطمئن شوید لینک معتبر است.");
                 }
-
-                configList = decoded.split(/\r?\n/).filter(line => line.includes('://'));
-                document.getElementById('total').innerText = configList.length;
-
-                if (configList.length === 0) throw new Error("کانفیگی پیدا نشد");
-
-                for (const conf of configList) {
-                    await testOne(conf);
-                }
-
-            } catch (err) {
-                alert("خطا: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "شروع مجدد";
-                if(healthyConfigs.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
             }
+
+            btn.disabled = false;
+            btn.innerText = "شروع مجدد";
+            if(healthyConfigs.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
         }
 
-        async function testOne(conf) {
+        async function testConfig(conf) {
             let address = "";
             let name = "Unnamed";
 
@@ -109,49 +128,73 @@
                     address = json.add; name = json.ps;
                 } else {
                     const parts = new URL(conf);
-                    address = parts.hostname;
+                    address = parts.hostname || parts.username;
                     name = decodeURIComponent(conf.split('#')[1] || "Config");
                 }
 
+                if(!address) throw new Error();
+
                 const row = document.getElementById('resultTable').insertRow();
+                row.className = "config-row transition";
                 const nCell = row.insertCell(0);
                 const pCell = row.insertCell(1);
                 const sCell = row.insertCell(2);
                 
-                nCell.className = "p-4 border-b border-slate-700/50 truncate max-w-[200px]";
-                pCell.className = "p-4 border-b border-slate-700/50 text-center font-mono";
-                sCell.className = "p-4 border-b border-slate-700/50 text-center";
+                nCell.className = "p-4 font-medium text-slate-200 truncate max-w-[180px] md:max-w-[300px]";
+                pCell.className = "p-4 text-center font-mono";
+                sCell.className = "p-4 text-center";
                 
                 nCell.innerText = name;
-                pCell.innerText = "...";
+                pCell.innerText = "تست...";
                 sCell.innerText = "⏳";
 
                 const start = Date.now();
+                const limit = parseInt(document.getElementById('pingLimit').value);
+
                 try {
-                    // تست پینگ مستقیم از مرورگر کاربر به سرور کانفیگ
-                    await fetch(`https://${address}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(3500) });
+                    // تست پینگ از اینترنت کاربر به پورت HTTPS سرور
+                    await fetch(`https://${address}`, { 
+                        mode: 'no-cors', 
+                        cache: 'no-cache', 
+                        signal: AbortSignal.timeout(4000) 
+                    });
                     const delay = Date.now() - start;
-                    pCell.innerText = delay + "ms";
-                    pCell.className += delay < 600 ? " text-green-400" : " text-yellow-500";
-                    sCell.innerText = "✅";
-                    healthyConfigs.push(conf);
+                    
+                    pCell.innerText = delay + " ms";
+                    if (delay <= limit) {
+                        pCell.className += " text-emerald-400 font-bold";
+                        sCell.innerText = "✅";
+                        healthyConfigs.push(conf);
+                    } else {
+                        pCell.className += " text-amber-500";
+                        sCell.innerText = "🐢";
+                        row.style.opacity = "0.6";
+                    }
                 } catch {
                     pCell.innerText = "Timeout";
                     pCell.className += " text-red-500 text-xs";
                     sCell.innerText = "❌";
+                    row.style.opacity = "0.4";
                 }
             } catch (e) {
-                console.error("خطا در پارس", e);
+                console.error("Parse Error");
             } finally {
                 testedCount++;
-                document.getElementById('tested').innerText = testedCount;
-                document.getElementById('healthy').innerText = healthyConfigs.length;
+                updateStats(configList.length, testedCount, healthyConfigs.length);
             }
+        }
+
+        function updateStats(t, td, h) {
+            document.getElementById('total').innerText = t;
+            document.getElementById('tested').innerText = td;
+            document.getElementById('healthy').innerText = h;
         }
 
         function copyAll() {
             navigator.clipboard.writeText(healthyConfigs.join('\n'));
-            alert("تمام کانفیگ‌های سالم کپی شدند!");
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "کپی شد! ✅";
+            setTimeout(() => btn.innerText = "کپی کانفیگ‌های پرسرعت", 2000);
         }
     </script>
 </body>
