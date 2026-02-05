@@ -3,166 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPN Config Pro Tester</title>
+    <title>VPN Tester - Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         body { font-family: 'Vazirmatn', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-5xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-500 mb-2 text-shadow-lg">تستر هوشمند سابلینک</h1>
-            <div id="statsBar" class="flex flex-wrap justify-center gap-3 mt-4 text-xs md:text-sm">
-                <span class="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 shadow-sm">کل: <b id="totalCount" class="text-blue-400">0</b></span>
-                <span class="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 shadow-sm">تست شده: <b id="testedCount" class="text-yellow-400">0</b></span>
-                <span class="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 shadow-sm text-emerald-400 font-bold">سالم: <b id="healthyCount">0</b></span>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1 space-y-4">
-                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-2xl">
-                    <label class="block text-sm font-medium mb-2 text-blue-300">ورودی سابلینک (هر خط یکی):</label>
-                    <textarea id="subLinks" rows="6" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-[10px] md:text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none transition text-left" dir="ltr" placeholder="https://example.com/sub..."></textarea>
-                    
-                    <div class="mt-4">
-                        <label class="block text-xs text-gray-400 mb-1">فیلتر پینگ (ms) کمتر از:</label>
-                        <input type="number" id="pingLimit" value="800" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-center font-bold text-blue-400">
-                    </div>
-
-                    <button onclick="processSub()" id="btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all transform active:scale-95">شروع فرآیند تست</button>
-                    <button onclick="copyHealthyConfigs()" id="copyBtn" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-sm font-medium hidden shadow-lg shadow-emerald-900/20">کپی کانفیگ‌های سبز (سالم)</button>
+<body class="p-5">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl mb-6">
+            <h1 class="text-xl font-bold mb-4 text-blue-400">تستر کانفیگ ساب‌لینک</h1>
+            <textarea id="subLinks" rows="4" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="لینک ساب را اینجا قرار دهید..."></textarea>
+            
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <label class="block text-xs text-gray-400 mb-1">فیلتر پینگ (ms):</label>
+                    <input type="number" id="pingLimit" value="1000" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-center">
                 </div>
-                <div id="statusInfo" class="text-center text-[11px] text-slate-500 min-h-[1.5rem]"></div>
+                <div class="flex-1 flex items-end">
+                    <button onclick="startProcessing()" id="btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition">شروع تست</button>
+                </div>
             </div>
 
-            <div class="lg:col-span-2">
-                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl min-h-[400px]">
-                    <div class="max-h-[600px] overflow-y-auto custom-scroll">
-                        <table class="w-full text-right border-collapse">
-                            <thead class="bg-slate-700/80 sticky top-0 backdrop-blur-md text-gray-300 text-xs">
-                                <tr>
-                                    <th class="p-4">نام کانفیگ</th>
-                                    <th class="p-4 text-center">پینگ</th>
-                                    <th class="p-4 text-center">وضعیت</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultTable" class="divide-y divide-slate-700"></tbody>
-                        </table>
-                        <div id="emptyState" class="p-20 text-center text-gray-500 text-sm italic">لیست کانفیگ‌ها اینجا ظاهر می‌شود...</div>
-                    </div>
-                </div>
+            <div id="stats" class="text-sm border-t border-slate-700 pt-4 flex justify-around text-gray-300">
+                <span>یافت شده: <b id="totalCount" class="text-blue-400">0</b></span>
+                <span>تست شده: <b id="testedCount" class="text-yellow-400">0</b></span>
+                <span>سالم: <b id="healthyCount" class="text-green-400">0</b></span>
             </div>
         </div>
+
+        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+            <table class="w-full text-right text-sm">
+                <thead class="bg-slate-900 text-gray-400">
+                    <tr>
+                        <th class="p-3">نام کانفیگ</th>
+                        <th class="p-3 text-center">پینگ</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTable"></tbody>
+            </table>
+        </div>
+        <button onclick="copyAll()" id="copyBtn" class="w-full mt-4 bg-green-600 py-3 rounded-xl font-bold hidden">کپی کانفیگ‌های سالم</button>
     </div>
 
     <script>
-        let healthyConfigs = [];
-        let totalFound = 0;
-        let testedSoFar = 0;
+        let healthyLinks = [];
+        let total = 0;
+        let tested = 0;
 
-        async function processSub() {
-            const btn = document.getElementById('btn');
-            const subInput = document.getElementById('subLinks').value.trim();
+        async function startProcessing() {
+            const subUrl = document.getElementById('subLinks').value.trim();
             const resultsBody = document.getElementById('resultTable');
-            const statusInfo = document.getElementById('statusInfo');
-            const pingLimit = parseInt(document.getElementById('pingLimit').value);
+            const btn = document.getElementById('btn');
             
-            if (!subInput) return alert("لطفاً لینک ساب را وارد کنید");
-            
-            btn.disabled = true;
-            btn.innerText = "درحال دریافت محتوا...";
+            if (!subUrl) return alert("لطفاً لینک را وارد کنید");
+
+            // Reset
             resultsBody.innerHTML = "";
-            healthyConfigs = [];
-            totalFound = 0;
-            testedSoFar = 0;
-            updateStats();
-            document.getElementById('emptyState').classList.add('hidden');
-            document.getElementById('copyBtn').classList.add('hidden');
+            healthyLinks = [];
+            total = 0;
+            tested = 0;
+            updateUI();
+            btn.disabled = true;
+            btn.innerText = "درحال دریافت...";
 
-            const links = subInput.split('\n').map(l => l.trim()).filter(l => l !== '');
-            const proxies = [
-                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-                (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
-            ];
+            try {
+                // استفاده از پروکسی مستقیم و ساده‌تر
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                let rawContent = data.contents;
 
-            for (let subUrl of links) {
-                let success = false;
-                let content = "";
-
-                for (let proxyFn of proxies) {
-                    try {
-                        statusInfo.innerText = "تلاش برای دریافت از پروکسی واسط...";
-                        const res = await fetch(proxyFn(subUrl));
-                        const data = await res.json();
-                        content = data.contents || data;
-                        if (content && content.length > 10) { success = true; break; }
-                    } catch (e) { console.log("تغییر پروکسی..."); }
+                // دیکود کردن محتوا
+                let decoded = "";
+                try {
+                    decoded = atob(rawContent.trim());
+                } catch {
+                    decoded = rawContent;
                 }
 
-                if (success) {
-                    statusInfo.innerText = "محتوا با موفقیت دریافت شد.";
-                    handleContent(content, pingLimit, resultsBody);
-                } else {
-                    statusInfo.innerText = "خطا در دریافت! لینک را چک کنید.";
+                const configs = decoded.split(/\r?\n/).filter(line => line.includes('://'));
+                total = configs.length;
+                updateUI();
+
+                if(total === 0) alert("هیچ کانفیگی در این لینک پیدا نشد!");
+
+                for (const conf of configs) {
+                    await testConfig(conf);
                 }
+
+            } catch (err) {
+                console.error(err);
+                alert("خطا در دریافت اطلاعات. احتمالاً لینک اشتباه است یا پروکسی کار نمی‌کند.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "شروع تست";
+                if(healthyLinks.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
             }
-            btn.disabled = false;
-            btn.innerText = "تست مجدد";
         }
 
-        function handleContent(content, limit, container) {
-            let decoded = "";
+        async function testConfig(conf) {
+            let address = "";
+            let name = "بدون نام";
+
             try {
-                decoded = atob(content.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/'));
-            } catch {
-                decoded = content;
+                if (conf.startsWith('vmess://')) {
+                    const json = JSON.parse(atob(conf.replace('vmess://', '')));
+                    address = json.add;
+                    name = json.ps;
+                } else {
+                    const urlObj = new URL(conf);
+                    address = urlObj.hostname;
+                    name = decodeURIComponent(urlObj.hash.slice(1)) || "Unnamed";
+                }
+
+                const row = document.getElementById('resultTable').insertRow();
+                const nameCell = row.insertCell(0);
+                const pingCell = row.insertCell(1);
+                nameCell.className = "p-3 border-b border-slate-700";
+                pingCell.className = "p-3 border-b border-slate-700 text-center font-mono";
+                nameCell.innerText = name;
+                pingCell.innerText = "...";
+
+                const start = Date.now();
+                const limit = parseInt(document.getElementById('pingLimit').value);
+
+                try {
+                    // تست پینگ واقعی با fetch
+                    await fetch(`https://${address}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
+                    const duration = Date.now() - start;
+                    pingCell.innerText = duration + "ms";
+                    
+                    if (duration <= limit) {
+                        pingCell.className += " text-green-400 font-bold";
+                        healthyLinks.push(conf);
+                    } else {
+                        pingCell.className += " text-yellow-500";
+                    }
+                } catch {
+                    pingCell.innerText = "❌";
+                    pingCell.className += " text-red-500";
+                }
+            } catch (e) {
+                console.error("خطا در پارس کانفیگ", e);
+            } finally {
+                tested++;
+                updateUI();
             }
-
-            const configs = decoded.split(/\r?\n/).filter(c => c.includes('://'));
-            totalFound += configs.length;
-            updateStats();
-
-            configs.forEach(conf => {
-                const parsed = parseConfig(conf);
-                if (parsed) {
-                    const rowId = `row-${Math.random().toString(36).substr(2, 7)}`;
-                    const row = container.insertRow();
-                    row.id = rowId;
-                    row.className = "hover:bg-slate-700/30 transition text-[11px] md:text-sm";
-                    row.innerHTML = `<td class="p-4 truncate max-w-[150px] md:max-w-[250px]">${parsed.name}</td><td class="p-4 text-center font-mono" id="ping-${rowId}">---</td><td class="p-4 text-center" id="status-${rowId}">⏳</td>`;
-                    performTest(parsed, rowId, conf, limit);
-                } else {
-                    testedSoFar++; updateStats();
-                }
-            });
         }
 
-        function parseConfig(url) {
-            try {
-                let name = "Unknown", address = "";
-                if (url.startsWith('vmess://')) {
-                    const data = JSON.parse(atob(url.replace('vmess://', '')));
-                    name = data.ps; address = data.add;
-                } else {
-                    const parts = new URL(url);
-                    address = parts.hostname || parts.username;
-                    name = decodeURIComponent(url.split('#')[1] || "Config");
-                }
-                return address ? { name, address } : null;
-            } catch { return null; }
+        function updateUI() {
+            document.getElementById('totalCount').innerText = total;
+            document.getElementById('testedCount').innerText = tested;
+            document.getElementById('healthyCount').innerText = healthyLinks.length;
         }
 
-        async function performTest(parsed, rowId, fullConfig, limit) {
-            const start = Date.now();
-            const pingCell = document.getElementById(`ping-${rowId}`);
-            const statusCell = document.getElementById(`status-${rowId}`);
-            
-            try {
-                const controller = new AbortController();
-                const timeout
+        function copyAll() {
+            navigator.clipboard.writeText(healthyLinks.join('\n'));
+            alert("کپی شد!");
+        }
+    </script>
+</body>
+</html>
