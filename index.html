@@ -3,165 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPN Tester - Fixed</title>
+    <title>VPN Sub Checker (Cloudflare Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         body { font-family: 'Vazirmatn', sans-serif; background-color: #0f172a; color: #f8fafc; }
     </style>
 </head>
-<body class="p-5">
+<body class="p-4 md:p-10">
     <div class="max-w-4xl mx-auto">
-        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl mb-6">
-            <h1 class="text-xl font-bold mb-4 text-blue-400">تستر کانفیگ ساب‌لینک</h1>
-            <textarea id="subLinks" rows="4" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="لینک ساب را اینجا قرار دهید..."></textarea>
+        <div class="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
+            <h1 class="text-2xl font-bold text-blue-400 mb-6 text-center">تستر ساب‌لینک (پروکسی کلادفلیر)</h1>
             
-            <div class="flex gap-4 mb-4">
-                <div class="flex-1">
-                    <label class="block text-xs text-gray-400 mb-1">فیلتر پینگ (ms):</label>
-                    <input type="number" id="pingLimit" value="1000" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-center">
+            <textarea id="subLinks" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-500 font-mono" dir="ltr" placeholder="https://example.com/sub..."></textarea>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">آدرس ورکر کلادفلیر شما:</label>
+                    <input type="text" id="workerUrl" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs" dir="ltr" placeholder="https://your-worker.workers.dev">
                 </div>
-                <div class="flex-1 flex items-end">
-                    <button onclick="startProcessing()" id="btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition">شروع تست</button>
+                <div class="flex items-end">
+                    <button onclick="startTest()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-bold transition">شروع تست</button>
                 </div>
             </div>
 
-            <div id="stats" class="text-sm border-t border-slate-700 pt-4 flex justify-around text-gray-300">
-                <span>یافت شده: <b id="totalCount" class="text-blue-400">0</b></span>
-                <span>تست شده: <b id="testedCount" class="text-yellow-400">0</b></span>
-                <span>سالم: <b id="healthyCount" class="text-green-400">0</b></span>
+            <div id="stats" class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-4 rounded-2xl">
+                <div>کل کانفیگ‌ها: <b id="total" class="text-blue-400">0</b></div>
+                <div>تست شده: <b id="tested" class="text-yellow-400">0</b></div>
+                <div>سالم: <b id="healthy" class="text-green-400">0</b></div>
             </div>
         </div>
 
-        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+        <div class="mt-8 bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-xl">
             <table class="w-full text-right text-sm">
-                <thead class="bg-slate-900 text-gray-400">
+                <thead class="bg-slate-900/80 text-slate-400">
                     <tr>
-                        <th class="p-3">نام کانفیگ</th>
-                        <th class="p-3 text-center">پینگ</th>
+                        <th class="p-4">نام کانفیگ</th>
+                        <th class="p-4 text-center">پینگ</th>
+                        <th class="p-4 text-center">وضعیت</th>
                     </tr>
                 </thead>
                 <tbody id="resultTable"></tbody>
             </table>
         </div>
-        <button onclick="copyAll()" id="copyBtn" class="w-full mt-4 bg-green-600 py-3 rounded-xl font-bold hidden">کپی کانفیگ‌های سالم</button>
+        <button onclick="copyAll()" id="copyBtn" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold hidden shadow-lg shadow-emerald-900/20">کپی کانفیگ‌های سالم (زیر ۱۰۰۰ میلی‌ثانیه)</button>
     </div>
 
     <script>
-        let healthyLinks = [];
-        let total = 0;
-        let tested = 0;
+        let healthyConfigs = [];
+        let configList = [];
+        let testedCount = 0;
 
-        async function startProcessing() {
+        async function startTest() {
             const subUrl = document.getElementById('subLinks').value.trim();
-            const resultsBody = document.getElementById('resultTable');
-            const btn = document.getElementById('btn');
-            
-            if (!subUrl) return alert("لطفاً لینک را وارد کنید");
+            const workerProxy = document.getElementById('workerUrl').value.trim();
+            const btn = document.getElementById('mainBtn');
+            const table = document.getElementById('resultTable');
 
-            // Reset
-            resultsBody.innerHTML = "";
-            healthyLinks = [];
-            total = 0;
-            tested = 0;
-            updateUI();
+            if (!subUrl || !workerProxy) return alert("لطفاً هم لینک ساب و هم آدرس ورکر را وارد کنید");
+
+            // آماده‌سازی اولیه
             btn.disabled = true;
-            btn.innerText = "درحال دریافت...";
+            btn.innerText = "در حال دریافت ساب...";
+            table.innerHTML = "";
+            healthyConfigs = [];
+            testedCount = 0;
 
             try {
-                // استفاده از پروکسی مستقیم و ساده‌تر
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`;
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                let rawContent = data.contents;
-
-                // دیکود کردن محتوا
+                // دریافت محتوا از طریق ورکر شما
+                const response = await fetch(`${workerProxy}?url=${encodeURIComponent(subUrl)}`);
+                const rawData = await response.text();
+                
                 let decoded = "";
                 try {
-                    decoded = atob(rawContent.trim());
+                    decoded = atob(rawData.trim().replace(/_/g, '/').replace(/-/g, '+'));
                 } catch {
-                    decoded = rawContent;
+                    decoded = rawData;
                 }
 
-                const configs = decoded.split(/\r?\n/).filter(line => line.includes('://'));
-                total = configs.length;
-                updateUI();
+                configList = decoded.split(/\r?\n/).filter(line => line.includes('://'));
+                document.getElementById('total').innerText = configList.length;
 
-                if(total === 0) alert("هیچ کانفیگی در این لینک پیدا نشد!");
+                if (configList.length === 0) throw new Error("کانفیگی پیدا نشد");
 
-                for (const conf of configs) {
-                    await testConfig(conf);
+                for (const conf of configList) {
+                    await testOne(conf);
                 }
 
             } catch (err) {
-                console.error(err);
-                alert("خطا در دریافت اطلاعات. احتمالاً لینک اشتباه است یا پروکسی کار نمی‌کند.");
+                alert("خطا: " + err.message);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "شروع تست";
-                if(healthyLinks.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
+                btn.innerText = "شروع مجدد";
+                if(healthyConfigs.length > 0) document.getElementById('copyBtn').classList.remove('hidden');
             }
         }
 
-        async function testConfig(conf) {
+        async function testOne(conf) {
             let address = "";
-            let name = "بدون نام";
+            let name = "Unnamed";
 
             try {
                 if (conf.startsWith('vmess://')) {
                     const json = JSON.parse(atob(conf.replace('vmess://', '')));
-                    address = json.add;
-                    name = json.ps;
+                    address = json.add; name = json.ps;
                 } else {
-                    const urlObj = new URL(conf);
-                    address = urlObj.hostname;
-                    name = decodeURIComponent(urlObj.hash.slice(1)) || "Unnamed";
+                    const parts = new URL(conf);
+                    address = parts.hostname;
+                    name = decodeURIComponent(conf.split('#')[1] || "Config");
                 }
 
                 const row = document.getElementById('resultTable').insertRow();
-                const nameCell = row.insertCell(0);
-                const pingCell = row.insertCell(1);
-                nameCell.className = "p-3 border-b border-slate-700";
-                pingCell.className = "p-3 border-b border-slate-700 text-center font-mono";
-                nameCell.innerText = name;
-                pingCell.innerText = "...";
+                const nCell = row.insertCell(0);
+                const pCell = row.insertCell(1);
+                const sCell = row.insertCell(2);
+                
+                nCell.className = "p-4 border-b border-slate-700/50 truncate max-w-[200px]";
+                pCell.className = "p-4 border-b border-slate-700/50 text-center font-mono";
+                sCell.className = "p-4 border-b border-slate-700/50 text-center";
+                
+                nCell.innerText = name;
+                pCell.innerText = "...";
+                sCell.innerText = "⏳";
 
                 const start = Date.now();
-                const limit = parseInt(document.getElementById('pingLimit').value);
-
                 try {
-                    // تست پینگ واقعی با fetch
-                    await fetch(`https://${address}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
-                    const duration = Date.now() - start;
-                    pingCell.innerText = duration + "ms";
-                    
-                    if (duration <= limit) {
-                        pingCell.className += " text-green-400 font-bold";
-                        healthyLinks.push(conf);
-                    } else {
-                        pingCell.className += " text-yellow-500";
-                    }
+                    // تست پینگ مستقیم از مرورگر کاربر به سرور کانفیگ
+                    await fetch(`https://${address}`, { mode: 'no-cors', cache: 'no-cache', signal: AbortSignal.timeout(3500) });
+                    const delay = Date.now() - start;
+                    pCell.innerText = delay + "ms";
+                    pCell.className += delay < 600 ? " text-green-400" : " text-yellow-500";
+                    sCell.innerText = "✅";
+                    healthyConfigs.push(conf);
                 } catch {
-                    pingCell.innerText = "❌";
-                    pingCell.className += " text-red-500";
+                    pCell.innerText = "Timeout";
+                    pCell.className += " text-red-500 text-xs";
+                    sCell.innerText = "❌";
                 }
             } catch (e) {
-                console.error("خطا در پارس کانفیگ", e);
+                console.error("خطا در پارس", e);
             } finally {
-                tested++;
-                updateUI();
+                testedCount++;
+                document.getElementById('tested').innerText = testedCount;
+                document.getElementById('healthy').innerText = healthyConfigs.length;
             }
         }
 
-        function updateUI() {
-            document.getElementById('totalCount').innerText = total;
-            document.getElementById('testedCount').innerText = tested;
-            document.getElementById('healthyCount').innerText = healthyLinks.length;
-        }
-
         function copyAll() {
-            navigator.clipboard.writeText(healthyLinks.join('\n'));
-            alert("کپی شد!");
+            navigator.clipboard.writeText(healthyConfigs.join('\n'));
+            alert("تمام کانفیگ‌های سالم کپی شدند!");
         }
     </script>
 </body>
